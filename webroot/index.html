@@ -71,7 +71,7 @@
 </style>
 </head>
 <body>
-<h1>📶 自动修复信号</h1>
+<h1>自动修复信号</h1>
 
 <div class="card">
   <span class="label">触发动作</span>
@@ -107,7 +107,7 @@
       <input id="retry_interval" inputmode="numeric" placeholder="05:00"> <span class="unit">分:秒</span>
     </span>
   </div>
-  <div class="hint">信号未恢复时，每隔这么久再开关一次飞行模式</div>
+  <div class="hint">信号未恢复时，每隔这么久再开关一次飞行模式。已拔卡或 SIM 未解锁（PIN）时不会触发</div>
 </div>
 
 <button onclick="save()">保存配置</button>
@@ -165,7 +165,7 @@ async function save() {
   try {
     const res = await fetch('cgi-bin/config.sh?' + qs);
     const r = await res.json();
-    showMsg(r.ok ? '已保存 ✅（下次触发时生效）' : '保存失败', !r.ok);
+    showMsg(r.ok ? '已保存（下次触发时生效）' : '保存失败', !r.ok);
   } catch (e) {
     showMsg('保存失败', true);
   }

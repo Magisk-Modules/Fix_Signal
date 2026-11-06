@@ -1,6 +1,6 @@
 id=fix_signal_auto
 name=自动修复信号
-version=v2.0
-versionCode=2
+version=v3.0
+versionCode=3
 author=Edward
-description=信号自动修复：支持 SIM 卡解锁后 / SIM 卡无信号时 / 开机首次解锁后 三种触发方式，自动开关飞行模式恢复信号。可配置等待时间、飞行模式持续时间、无信号重试间隔。点「操作」打开配置页。
+description=信号自动修复：支持 SIM 卡解锁后 / SIM 卡无信号时 / 开机首次解锁后 三种触发方式，自动开关飞行模式恢复信号。v3.0：无信号模式下增加 SIM 卡检测，拔卡或 SIM 未解锁时不再空转飞行模式。可配置等待时间、飞行模式持续时间、无信号重试间隔。点「操作」打开配置页。
