@@ -1,0 +1,4 @@
+trigger=sim_unlock
+wait_time=5
+airplane_duration=6
+retry_interval=5:00

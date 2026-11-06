@@ -1,25 +1,12 @@
 #!/system/bin/sh
-# Auto-fix signal after boot: toggle airplane mode once SIM is unlocked.
-# Fixes "no signal after reboot" caused by CS-domain (2G/3G) registration
-# being rejected after the carrier retired 2G/3G.
+# service.sh：启动 WebUI 的 HTTP 服务 + 主逻辑
 
-# Wait for full boot
-until [ "$(getprop sys.boot_completed)" = "1" ]; do
-  sleep 3
-done
+MODDIR=$(cd "$(dirname "$0")" && pwd)
+PORT=8765
+BB=/data/adb/magisk/busybox
 
-# Wait for SIM to be unlocked (LOADED), up to 5 minutes
-COUNT=0
-until getprop gsm.sim.state 2>/dev/null | grep -q "LOADED" || [ "$COUNT" -ge 150 ]; do
-  sleep 2
-  COUNT=$((COUNT+1))
-done
+# 启动 HTTP 服务（提供 WebUI 静态页 + /cgi-bin/ 配置读写）
+"$BB" httpd -p "127.0.0.1:$PORT" -h "$MODDIR/webroot" >/dev/null 2>&1 &
 
-# Give the first registration attempt a moment, then force re-register
-sleep 5
-
-settings put global airplane_mode_on 1
-am broadcast -a android.intent.action.AIRPLANE_MODE --ez state true >/dev/null 2>&1
-sleep 6
-settings put global airplane_mode_on 0
-am broadcast -a android.intent.action.AIRPLANE_MODE --ez state false >/dev/null 2>&1
+# 启动主逻辑（后台，根据触发动作执行）
+"$MODDIR/main.sh" >/dev/null 2>&1 &

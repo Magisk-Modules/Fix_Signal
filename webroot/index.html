@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>自动修复信号 - 配置</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --muted: #777;
+    --accent: #2563eb;
+    --border: #e2e5ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --card: #1a1d24;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --accent: #4f8cff;
+      --border: #2a2e37;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 16px;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, system-ui, Roboto, "PingFang SC", sans-serif;
+  }
+  h1 { font-size: 20px; margin: 4px 0 16px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; margin-bottom: 12px;
+  }
+  .label {
+    display: block; font-size: 14px; color: var(--muted);
+    margin-bottom: 10px; font-weight: 600;
+  }
+  .opt {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 0; font-size: 15px; cursor: pointer;
+  }
+  .opt + .opt { border-top: 1px solid var(--border); }
+  .row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 6px 0;
+  }
+  .row .label { margin: 0; font-weight: 500; }
+  select, input {
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; font-size: 15px; min-width: 90px;
+  }
+  input#retry_interval { width: 110px; text-align: center; }
+  .unit { color: var(--muted); font-size: 13px; }
+  button {
+    width: 100%; padding: 13px; font-size: 16px; font-weight: 600;
+    color: #fff; background: var(--accent);
+    border: none; border-radius: 12px; cursor: pointer;
+    margin-top: 4px;
+  }
+  button:active { opacity: 0.85; }
+  #msg {
+    text-align: center; margin-top: 10px; font-size: 14px;
+    min-height: 20px; color: var(--accent);
+  }
+  #msg.err { color: #e5484d; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<h1>📶 自动修复信号</h1>
+
+<div class="card">
+  <span class="label">触发动作</span>
+  <label class="opt"><input type="radio" name="trigger" value="sim_unlock" onchange="toggleRetry()"> SIM 卡解锁后</label>
+  <label class="opt"><input type="radio" name="trigger" value="no_signal" onchange="toggleRetry()"> SIM 卡无信号时</label>
+  <label class="opt"><input type="radio" name="trigger" value="first_unlock" onchange="toggleRetry()"> 开机后首次解锁（输锁屏密码）</label>
+</div>
+
+<div class="card">
+  <div class="row">
+    <span class="label">等待时间</span>
+    <span>
+      <select id="wait_time"></select> <span class="unit">秒</span>
+    </span>
+  </div>
+  <div class="hint">触发条件满足后，先等待这么久再开始开关飞行模式</div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <span class="label">飞行模式持续时间</span>
+    <span>
+      <select id="airplane_duration"></select> <span class="unit">秒</span>
+    </span>
+  </div>
+  <div class="hint">飞行模式保持开启的时长（太短 radio 来不及断开）</div>
+</div>
+
+<div class="card" id="retry_group" style="display:none">
+  <div class="row">
+    <span class="label">无信号重试间隔</span>
+    <span>
+      <input id="retry_interval" inputmode="numeric" placeholder="05:00"> <span class="unit">分:秒</span>
+    </span>
+  </div>
+  <div class="hint">信号未恢复时，每隔这么久再开关一次飞行模式</div>
+</div>
+
+<button onclick="save()">保存配置</button>
+<div id="msg"></div>
+
+<script>
+function fillSelect(el, from, to) {
+  for (let i = from; i <= to; i++) {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = i + ' 秒';
+    el.appendChild(o);
+  }
+}
+fillSelect(document.getElementById('wait_time'), 5, 15);
+fillSelect(document.getElementById('airplane_duration'), 3, 9);
+
+function toggleRetry() {
+  const t = document.querySelector('input[name=trigger]:checked');
+  document.getElementById('retry_group').style.display =
+    (t && t.value === 'no_signal') ? '' : 'none';
+}
+function showMsg(s, err) {
+  const m = document.getElementById('msg');
+  m.textContent = s;
+  m.className = err ? 'err' : '';
+}
+
+async function load() {
+  try {
+    const res = await fetch('cgi-bin/config.sh');
+    const cfg = await res.json();
+    const r = document.querySelector(`input[name=trigger][value="${cfg.trigger}"]`);
+    if (r) r.checked = true;
+    document.getElementById('wait_time').value = cfg.wait_time;
+    document.getElementById('airplane_duration').value = cfg.airplane_duration;
+    document.getElementById('retry_interval').value = cfg.retry_interval;
+    toggleRetry();
+  } catch (e) {
+    showMsg('加载配置失败', true);
+  }
+}
+
+async function save() {
+  const t = document.querySelector('input[name=trigger]:checked');
+  if (!t) { showMsg('请选择触发动作', true); return; }
+  const trigger = t.value;
+  const wait_time = document.getElementById('wait_time').value;
+  const airplane_duration = document.getElementById('airplane_duration').value;
+  const retry_interval = document.getElementById('retry_interval').value.trim();
+  if (trigger === 'no_signal' && !/^\d{1,2}:[0-5]\d$/.test(retry_interval)) {
+    showMsg('重试间隔格式应为 分:秒，如 05:00', true);
+    return;
+  }
+  const qs = `set=1&trigger=${trigger}&wait_time=${wait_time}&airplane_duration=${airplane_duration}&retry_interval=${retry_interval}`;
+  try {
+    const res = await fetch('cgi-bin/config.sh?' + qs);
+    const r = await res.json();
+    showMsg(r.ok ? '已保存 ✅（下次触发时生效）' : '保存失败', !r.ok);
+  } catch (e) {
+    showMsg('保存失败', true);
+  }
+}
+
+load();
+</script>
+</body>
+</html>
