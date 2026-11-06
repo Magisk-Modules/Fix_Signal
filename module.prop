@@ -1,0 +1,6 @@
+id=fix_signal_auto
+name=自动修复信号
+version=v1.0
+versionCode=1
+author=Edward
+description=开机后等待 SIM 卡解锁完成，自动开关一次飞行模式，修复重启后无信号的问题（联通 2G/3G 退网导致 CS 域注册被拒）。
